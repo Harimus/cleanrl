@@ -11,9 +11,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import tyro
-from torch.utils.tensorboard import SummaryWriter
-
 from cleanrl_utils.buffers import ReplayBuffer
+from torch.utils.tensorboard import SummaryWriter
 
 
 @dataclass
@@ -36,7 +35,7 @@ class Args:
     """whether to capture videos of the agent performances (check out `videos` folder)"""
 
     # Algorithm specific arguments
-    env_id: str = "Hopper-v4"
+    env_id: str = "XgoMiniAnt-v0"
     """the environment id of the task"""
     total_timesteps: int = 1000000
     """total timesteps of the experiments"""
@@ -85,7 +84,8 @@ class SoftQNetwork(nn.Module):
     def __init__(self, env):
         super().__init__()
         self.fc1 = nn.Linear(
-            np.array(env.single_observation_space.shape).prod() + np.prod(env.single_action_space.shape),
+            np.array(env.single_observation_space.shape).prod()
+            + np.prod(env.single_action_space.shape),
             256,
         )
         self.fc2 = nn.Linear(256, 256)
@@ -132,7 +132,9 @@ class Actor(nn.Module):
         mean = self.fc_mean(x)
         log_std = self.fc_logstd(x)
         log_std = torch.tanh(log_std)
-        log_std = LOG_STD_MIN + 0.5 * (LOG_STD_MAX - LOG_STD_MIN) * (log_std + 1)  # From SpinUp / Denis Yarats
+        log_std = LOG_STD_MIN + 0.5 * (LOG_STD_MAX - LOG_STD_MIN) * (
+            log_std + 1
+        )  # From SpinUp / Denis Yarats
 
         return mean, log_std
 
@@ -151,8 +153,7 @@ class Actor(nn.Module):
         return action, log_prob, mean
 
 
-if __name__ == "__main__":
-
+def main():
     args = tyro.cli(Args)
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
     if args.track:
@@ -170,7 +171,8 @@ if __name__ == "__main__":
     writer = SummaryWriter(f"runs/{run_name}")
     writer.add_text(
         "hyperparameters",
-        "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
+        "|param|value|\n|-|-|\n%s"
+        % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
     )
 
     # TRY NOT TO MODIFY: seeding
@@ -183,9 +185,14 @@ if __name__ == "__main__":
 
     # env setup
     envs = gym.vector.SyncVectorEnv(
-        [make_env(args.env_id, args.seed + i, i, args.capture_video, run_name) for i in range(args.num_envs)]
+        [
+            make_env(args.env_id, args.seed + i, i, args.capture_video, run_name)
+            for i in range(args.num_envs)
+        ]
     )
-    assert isinstance(envs.single_action_space, gym.spaces.Box), "only continuous action space is supported"
+    assert isinstance(envs.single_action_space, gym.spaces.Box), (
+        "only continuous action space is supported"
+    )
 
     max_action = float(envs.single_action_space.high[0])
 
@@ -196,12 +203,16 @@ if __name__ == "__main__":
     qf2_target = SoftQNetwork(envs).to(device)
     qf1_target.load_state_dict(qf1.state_dict())
     qf2_target.load_state_dict(qf2.state_dict())
-    q_optimizer = optim.Adam(list(qf1.parameters()) + list(qf2.parameters()), lr=args.q_lr)
+    q_optimizer = optim.Adam(
+        list(qf1.parameters()) + list(qf2.parameters()), lr=args.q_lr
+    )
     actor_optimizer = optim.Adam(list(actor.parameters()), lr=args.policy_lr)
 
     # Automatic entropy tuning
     if args.autotune:
-        target_entropy = -torch.prod(torch.Tensor(envs.single_action_space.shape).to(device)).item()
+        target_entropy = -torch.prod(
+            torch.Tensor(envs.single_action_space.shape).to(device)
+        ).item()
         log_alpha = torch.zeros(1, requires_grad=True, device=device)
         alpha = log_alpha.exp().item()
         a_optimizer = optim.Adam([log_alpha], lr=args.q_lr)
@@ -224,7 +235,9 @@ if __name__ == "__main__":
     for global_step in range(args.total_timesteps):
         # ALGO LOGIC: put action logic here
         if global_step < args.learning_starts:
-            actions = np.array([envs.single_action_space.sample() for _ in range(envs.num_envs)])
+            actions = np.array(
+                [envs.single_action_space.sample() for _ in range(envs.num_envs)]
+            )
         else:
             actions, _, _ = actor.get_action(torch.Tensor(obs).to(device))
             actions = actions.detach().cpu().numpy()
@@ -236,9 +249,15 @@ if __name__ == "__main__":
         if "final_info" in infos:
             for info in infos["final_info"]:
                 if info is not None:
-                    print(f"global_step={global_step}, episodic_return={info['episode']['r']}")
-                    writer.add_scalar("charts/episodic_return", info["episode"]["r"], global_step)
-                    writer.add_scalar("charts/episodic_length", info["episode"]["l"], global_step)
+                    print(
+                        f"global_step={global_step}, episodic_return={info['episode']['r']}"
+                    )
+                    writer.add_scalar(
+                        "charts/episodic_return", info["episode"]["r"], global_step
+                    )
+                    writer.add_scalar(
+                        "charts/episodic_length", info["episode"]["l"], global_step
+                    )
                     break
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `final_observation`
@@ -255,11 +274,18 @@ if __name__ == "__main__":
         if global_step > args.learning_starts:
             data = rb.sample(args.batch_size)
             with torch.no_grad():
-                next_state_actions, next_state_log_pi, _ = actor.get_action(data.next_observations)
+                next_state_actions, next_state_log_pi, _ = actor.get_action(
+                    data.next_observations
+                )
                 qf1_next_target = qf1_target(data.next_observations, next_state_actions)
                 qf2_next_target = qf2_target(data.next_observations, next_state_actions)
-                min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - alpha * next_state_log_pi
-                next_q_value = data.rewards.flatten() + (1 - data.dones.flatten()) * args.gamma * (min_qf_next_target).view(-1)
+                min_qf_next_target = (
+                    torch.min(qf1_next_target, qf2_next_target)
+                    - alpha * next_state_log_pi
+                )
+                next_q_value = data.rewards.flatten() + (
+                    1 - data.dones.flatten()
+                ) * args.gamma * (min_qf_next_target).view(-1)
 
             qf1_a_values = qf1(data.observations, data.actions).view(-1)
             qf2_a_values = qf2(data.observations, data.actions).view(-1)
@@ -289,7 +315,9 @@ if __name__ == "__main__":
                     if args.autotune:
                         with torch.no_grad():
                             _, log_pi, _ = actor.get_action(data.observations)
-                        alpha_loss = (-log_alpha.exp() * (log_pi + target_entropy)).mean()
+                        alpha_loss = (
+                            -log_alpha.exp() * (log_pi + target_entropy)
+                        ).mean()
 
                         a_optimizer.zero_grad()
                         alpha_loss.backward()
@@ -298,14 +326,26 @@ if __name__ == "__main__":
 
             # update the target networks
             if global_step % args.target_network_frequency == 0:
-                for param, target_param in zip(qf1.parameters(), qf1_target.parameters()):
-                    target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
-                for param, target_param in zip(qf2.parameters(), qf2_target.parameters()):
-                    target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
+                for param, target_param in zip(
+                    qf1.parameters(), qf1_target.parameters()
+                ):
+                    target_param.data.copy_(
+                        args.tau * param.data + (1 - args.tau) * target_param.data
+                    )
+                for param, target_param in zip(
+                    qf2.parameters(), qf2_target.parameters()
+                ):
+                    target_param.data.copy_(
+                        args.tau * param.data + (1 - args.tau) * target_param.data
+                    )
 
             if global_step % 100 == 0:
-                writer.add_scalar("losses/qf1_values", qf1_a_values.mean().item(), global_step)
-                writer.add_scalar("losses/qf2_values", qf2_a_values.mean().item(), global_step)
+                writer.add_scalar(
+                    "losses/qf1_values", qf1_a_values.mean().item(), global_step
+                )
+                writer.add_scalar(
+                    "losses/qf2_values", qf2_a_values.mean().item(), global_step
+                )
                 writer.add_scalar("losses/qf1_loss", qf1_loss.item(), global_step)
                 writer.add_scalar("losses/qf2_loss", qf2_loss.item(), global_step)
                 writer.add_scalar("losses/qf_loss", qf_loss.item() / 2.0, global_step)
@@ -318,7 +358,13 @@ if __name__ == "__main__":
                     global_step,
                 )
                 if args.autotune:
-                    writer.add_scalar("losses/alpha_loss", alpha_loss.item(), global_step)
+                    writer.add_scalar(
+                        "losses/alpha_loss", alpha_loss.item(), global_step
+                    )
 
     envs.close()
     writer.close()
+
+
+if __name__ == "__main__":
+    main()
