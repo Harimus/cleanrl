@@ -247,11 +247,8 @@ def main():
 
         # TRY NOT TO MODIFY: record rewards for plotting purposes
         if any(terminations) or any(truncations):
-            breakpoint()
-            info = infos # change this shit when env > 1
-            print(
-                f"global_step={global_step}, episodic_return={info['episode']['r']}"
-            )
+            info = infos  # change this shit when env > 1
+            print(f"global_step={global_step}, episodic_return={info['episode']['r']}")
             writer.add_scalar(
                 "charts/episodic_return", info["episode"]["r"], global_step
             )
@@ -263,7 +260,8 @@ def main():
         real_next_obs = next_obs.copy()
         for idx, trunc in enumerate(truncations):
             if trunc:
-                real_next_obs[idx] = infos["final_observation"][idx]
+                pass  # seems like no final_obs available?
+                # real_next_obs[idx] = infos["final_observation"][idx]
         rb.add(obs, real_next_obs, actions, rewards, terminations, infos)
 
         # TRY NOT TO MODIFY: CRUCIAL step easy to overlook
