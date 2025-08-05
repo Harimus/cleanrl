@@ -33,6 +33,8 @@ class Args:
     """the entity (team) of wandb's project"""
     capture_video: bool = False
     """whether to capture videos of the agent performances (check out `videos` folder)"""
+    video_frequency: int = 10
+    """the frequency of capturing videos of the agent performances (in episodes)"""
 
     # Algorithm specific arguments
     env_id: str = "XgoMiniAnt-v0"
@@ -65,11 +67,15 @@ class Args:
     """automatic tuning of the entropy coefficient"""
 
 
-def make_env(env_id, seed, idx, capture_video, run_name):
+def make_env(env_id, seed, idx, capture_video, run_name, video_frequency=10):
     def thunk():
         if capture_video and idx == 0:
             env = gym.make(env_id, render_mode="rgb_array")
-            env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
+            env = gym.wrappers.RecordVideo(
+                env,
+                f"videos/{run_name}",
+                episode_trigger=lambda x: x % video_frequency == 0,
+            )
         else:
             env = gym.make(env_id)
         env = gym.wrappers.RecordEpisodeStatistics(env)
@@ -186,7 +192,14 @@ def main():
     # env setup
     envs = gym.vector.SyncVectorEnv(
         [
-            make_env(args.env_id, args.seed + i, i, args.capture_video, run_name)
+            make_env(
+                args.env_id,
+                args.seed + i,
+                i,
+                args.capture_video,
+                run_name,
+                args.video_frequency,
+            )
             for i in range(args.num_envs)
         ]
     )
