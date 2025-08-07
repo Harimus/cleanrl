@@ -1,4 +1,5 @@
 # docs and experiment results can be found at https://docs.cleanrl.dev/rl-algorithms/sac/#sac_continuous_actionpy
+import datetime
 import os
 import random
 import time
@@ -161,7 +162,8 @@ class Actor(nn.Module):
 
 def main():
     args = tyro.cli(Args)
-    run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+    # run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+    run_name = f"{args.env_id}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
     if args.track:
         import wandb
 
