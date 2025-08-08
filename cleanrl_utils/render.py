@@ -24,8 +24,8 @@ class RewardRecordVideo(gym.wrappers.RecordVideo):
             name_prefix,
             fps,
             disable_logger,
-            gc_trigger,
         )
+        self.gc_trigger=gc_trigger #backwards compatibility
         self.reward_sum = 0.0
 
     def reset(self, **kwargs):
