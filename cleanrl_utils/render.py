@@ -13,7 +13,7 @@ class RewardRecordVideo(gym.wrappers.RecordVideo):
         name_prefix="rl-video",
         fps=None,
         disable_logger=True,
-        gc_trigger=...,
+        gc_trigger=lambda episode: True,
     ):
         super().__init__(
             env,
