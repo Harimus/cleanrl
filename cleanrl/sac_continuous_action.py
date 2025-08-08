@@ -12,8 +12,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import tyro
-from cleanrl_utils.buffers import ReplayBuffer
 from torch.utils.tensorboard import SummaryWriter
+
+from cleanrl_utils.buffers import ReplayBuffer
+from cleanrl_utils.render import RewardRecordVideo
 
 
 @dataclass
@@ -72,7 +74,7 @@ def make_env(env_id, seed, idx, capture_video, run_name, video_frequency=10):
     def thunk():
         if capture_video and idx == 0:
             env = gym.make(env_id, render_mode="rgb_array")
-            env = gym.wrappers.RecordVideo(
+            env = RewardRecordVideo(
                 env,
                 f"videos/{run_name}",
                 episode_trigger=lambda x: x % video_frequency == 0,
