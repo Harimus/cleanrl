@@ -29,8 +29,9 @@ class RewardRecordVideo(gym.wrappers.RecordVideo):
         self.reward_sum = 0.0
 
     def reset(self, **kwargs):
+        retval =  super().reset(**kwargs)
         self.reward_sum = 0.0
-        return super().reset(**kwargs)
+        return retval
 
     def step(self, action):
         obs, reward, terminated, truncated, info = super().step(action)
@@ -39,5 +40,5 @@ class RewardRecordVideo(gym.wrappers.RecordVideo):
 
     def stop_recording(self):
         if self._video_name:
-            self._video_name = self._video_name + str(self.reward_sum)
+            self._video_name = self._video_name + "_" + str(self.reward_sum)
         return super().stop_recording()
