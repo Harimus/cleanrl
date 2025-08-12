@@ -161,7 +161,7 @@ class Agent(nn.Module):
         )
 
 
-if __name__ == "__main__":
+def main():
     args = tyro.cli(Args)
     args.batch_size = int(args.num_envs * args.num_steps)
     args.minibatch_size = int(args.batch_size // args.num_minibatches)
@@ -416,3 +416,7 @@ if __name__ == "__main__":
 
     envs.close()
     writer.close()
+
+
+if __name__ == "__main__":
+    main()
