@@ -1,5 +1,4 @@
 import gymnasium as gym
-import numpy as np
 
 
 class RewardRecordVideo(gym.wrappers.RecordVideo):
@@ -25,7 +24,7 @@ class RewardRecordVideo(gym.wrappers.RecordVideo):
             fps,
             disable_logger,
         )
-        self.gc_trigger=gc_trigger #backwards compatibility
+        self.gc_trigger = gc_trigger  # backwards compatibility
         self.reward_sum = 0.0
 
     def reset(self, **kwargs):
