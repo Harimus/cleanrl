@@ -12,10 +12,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import tyro
-from torch.utils.tensorboard import SummaryWriter
-
 from cleanrl_utils.buffers import ReplayBuffer
 from cleanrl_utils.render import RewardRecordVideo
+from torch.utils.tensorboard import SummaryWriter
 
 
 @dataclass
@@ -38,6 +37,7 @@ class Args:
     """whether to capture videos of the agent performances (check out `videos` folder)"""
     video_frequency: int = 10
     """the frequency of capturing videos of the agent performances (in episodes)"""
+    run_name_prefix: str = ""
 
     # Algorithm specific arguments
     env_id: str = "XgoMiniAnt-v0"
@@ -165,7 +165,7 @@ class Actor(nn.Module):
 def main():
     args = tyro.cli(Args)
     # run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
-    run_name = f"{args.env_id}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
+    run_name = f"{args.run_name_prefix}{args.env_id}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
     if args.track:
         import wandb
 
