@@ -274,7 +274,8 @@ def main():
             )
             if "episode_reward_info" in info:
                 for key, val in info["episode_reward_info"].items():
-                    writer.add_scalar(f"reward/{key}", val, global_step)
+                    if not key.startswith("_"):
+                        writer.add_scalar(f"reward/{key}", val, global_step)
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `final_observation`
         real_next_obs = next_obs.copy()
